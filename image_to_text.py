@@ -2,6 +2,7 @@ import sys
 import cv2
 import json
 import numpy as np
+import math
 
 
 def read_json(filename):
@@ -9,8 +10,8 @@ def read_json(filename):
         return json.load(infile)
 
 def pad_image(img, padding_value=255):
-    nbr_col_paddings = len(img[0]) % 2
-    nbr_row_paddings = len(img) % 4
+    nbr_col_paddings = 2 * math.ceil(len(img[0]) / 2) - len(img[0])
+    nbr_row_paddings = 4 * math.ceil(len(img) / 4) - len(img)
 
     pad_rows = np.array([[padding_value] * len(img[0])] * nbr_row_paddings)
     img = np.concatenate((img, pad_rows), axis=0)
