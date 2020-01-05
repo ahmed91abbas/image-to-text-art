@@ -1,8 +1,12 @@
 import sys
 import cv2
+import json
 import numpy as np
 
 
+def read_json(filename):
+    with open(filename, "r", encoding="utf8") as infile:
+        return json.load(infile)
 
 def pad_image(img, padding_value=255):
     nbr_col_paddings = len(img[0]) % 2
@@ -38,6 +42,36 @@ def resize_img(img, char_width=40, char_height=None):
     return resized
 
 def img_to_braille(img):
+def get_braille_value(matrix, mapping, blank_value):
+    ''' Dot numering following the ISO/TR 11548-1
+    standard for 8-dot Braille
+    1 4
+    2 5
+    3 6
+    7 8'''
+    key = ""
+    if matrix[0][0] < blank_value:
+        key += "1"
+    if matrix[1][0] < blank_value:
+        key += "2"
+    if matrix[2][0] < blank_value:
+        key += "3"
+    if matrix[0][1] < blank_value:
+        key += "4"
+    if matrix[1][1] < blank_value:
+        key += "5"
+    if matrix[2][1] < blank_value:
+        key += "6"
+    if matrix[3][0] < blank_value:
+        key += "7"
+    if matrix[3][1] < blank_value:
+        key += "8"
+
+    if key:
+        return mapping[key]
+
+    return mapping["BLANK"]
+
     result = ""
     for row in img:
         for col in row:
@@ -52,9 +86,10 @@ def save_to_file(filename, data):
     with open(filename, "w", encoding="utf8") as f:
         f.write(data)
 
-def run(infile, outfile):
+def run(infile, outfile, mapping):
     print("Reading image file", infile)
     img = read_img(infile)
+
     print("Resizing image")
     print("Original image dimensions:", img.shape)
     img = resize_img(img)
@@ -74,6 +109,7 @@ def run(infile, outfile):
 
 
 if __name__ == '__main__':
+    mapping = read_json("binary_braille_mappings.json")
     try:
         infile = sys.argv[1]
     except IndexError:
