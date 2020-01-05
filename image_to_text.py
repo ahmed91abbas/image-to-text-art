@@ -1,6 +1,20 @@
 import sys
 import cv2
+import numpy as np
 
+
+
+def pad_image(img, padding_value=255):
+    nbr_col_paddings = len(img[0]) % 2
+    nbr_row_paddings = len(img) % 4
+
+    pad_rows = np.array([[padding_value] * len(img[0])] * nbr_row_paddings)
+    img = np.concatenate((img, pad_rows), axis=0)
+
+    pad_cols = np.full((len(img), nbr_col_paddings), padding_value)
+    img = np.append(img, pad_cols, axis=1)
+
+    return img
 
 def get_image_path_from_input():
     filename = None
@@ -9,8 +23,7 @@ def get_image_path_from_input():
     return filename
 
 def read_img(path):
-    img_path = 'a.jpg'
-    img = cv2.imread(img_path, 0)
+    img = cv2.imread(path, 0)
     return img
 
 def resize_img(img, char_width=40, char_height=None):
@@ -46,11 +59,19 @@ def run(infile, outfile):
     print("Original image dimensions:", img.shape)
     img = resize_img(img)
     print("Resized image dimensions:", img.shape)
+
+    print("Padding image")
+    img = pad_image(img)
+    print("Final image dimensions:", img.shape)
+
     print("Converting image to Braille art")
     result = img_to_braille(img)
+
     print("Saving to file")
     save_to_file(outfile, result)
+
     print("Done.")
+
 
 if __name__ == '__main__':
     try:
@@ -58,4 +79,4 @@ if __name__ == '__main__':
     except IndexError:
         infile = get_image_path_from_input()
     outfile = "output.txt"
-    run(infile, outfile)
+    run(infile, outfile, mapping)
