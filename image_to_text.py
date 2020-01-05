@@ -42,7 +42,6 @@ def resize_img(img, char_width=40, char_height=None):
     resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
     return resized
 
-def img_to_braille(img):
 def get_braille_value(matrix, mapping, blank_value):
     ''' Dot numering following the ISO/TR 11548-1
     standard for 8-dot Braille
@@ -73,14 +72,24 @@ def get_braille_value(matrix, mapping, blank_value):
 
     return mapping["BLANK"]
 
+def blockshaped(arr, nrows, ncols):
+    # Source https://stackoverflow.com/a/16858283
+    h, w = arr.shape
+    assert h % nrows == 0, "{} rows is not evenly divisble by {}".format(h, nrows)
+    assert w % ncols == 0, "{} cols is not evenly divisble by {}".format(w, ncols)
+    return (arr.reshape(h//nrows, nrows, -1, ncols)
+               .swapaxes(1,2)
+               .reshape(-1, nrows, ncols))
+
+def img_to_braille(img, mapping):
     result = ""
-    for row in img:
-        for col in row:
-            if col < 130:
-                result += "#"
-            else:
-                result += "-"
-        result += "\n"
+    count = 0
+    for matrix in blockshaped(img, 4, 2):
+        result += get_braille_value(matrix, mapping, 160)
+        count += 1
+        if count == len(img[0]) / 2:
+            count = 0
+            result += "\n"
     return result
 
 def save_to_file(filename, data):
@@ -101,7 +110,7 @@ def run(infile, outfile, mapping):
     print("Final image dimensions:", img.shape)
 
     print("Converting image to Braille art")
-    result = img_to_braille(img)
+    result = img_to_braille(img, mapping)
 
     print("Saving to file")
     save_to_file(outfile, result)
