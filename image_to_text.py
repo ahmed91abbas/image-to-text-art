@@ -3,6 +3,8 @@ import cv2
 import json
 import numpy as np
 import math
+import requests
+import re
 
 
 def read_json(filename):
@@ -29,11 +31,22 @@ def get_image_path_from_input():
         filename = input("Enter image path:\n")
     return filename
 
+def read_img_data(indata):
+    if re.match('(https?://[0-9A-Za-z-._~?/#]+)', indata):
+        return read_img_from_url(indata)
+    else:
+        return read_img(indata)
+
 def read_img(path):
     img = cv2.imread(path, 0)
     return img
 
-def resize_img(img, char_width=40, char_height=None):
+def read_img_from_url(url):
+    req = requests.get(url)
+    arr = np.asarray(bytearray(req.content), dtype=np.uint8)
+    return cv2.imdecode(arr, 0)
+
+def resize_img(img, char_width=80, char_height=None):
     scale_factor = img.shape[1] / img.shape[0]
     width = char_width
     if char_height:
@@ -83,11 +96,11 @@ def blockshaped(arr, nrows, ncols):
                .swapaxes(1,2)
                .reshape(-1, nrows, ncols))
 
-def img_to_braille(img, mapping):
+def img_to_braille(img, mapping, blank_value):
     result = ""
     count = 0
     for matrix in blockshaped(img, 4, 2):
-        result += get_braille_value(matrix, mapping, 160)
+        result += get_braille_value(matrix, mapping, blank_value)
         count += 1
         if count == len(img[0]) / 2:
             count = 0
@@ -98,13 +111,13 @@ def save_to_file(filename, data):
     with open(filename, "w", encoding="utf8") as f:
         f.write(data)
 
-def run(infile, outfile, mapping):
-    print("Reading image file", infile)
-    img = read_img(infile)
+def run(indata, outfile, mapping, resize_width, blank_value):
+    print("Reading image data", indata)
+    img = read_img_data(indata)
 
     print("Resizing image")
     print("Original image dimensions:", img.shape)
-    img = resize_img(img)
+    img = resize_img(img, char_width=resize_width)
     print("Resized image dimensions:", img.shape)
 
     print("Padding image")
@@ -112,7 +125,7 @@ def run(infile, outfile, mapping):
     print("Final image dimensions:", img.shape)
 
     print("Converting image to Braille art")
-    result = img_to_braille(img, mapping)
+    result = img_to_braille(img, mapping, blank_value)
 
     print("Saving to file")
     save_to_file(outfile, result)
@@ -122,9 +135,11 @@ def run(infile, outfile, mapping):
 
 if __name__ == '__main__':
     mapping = read_json("binary_braille_mappings.json")
+    resize_width = 74
+    blank_value = 200
     try:
-        infile = sys.argv[1]
+        indata = sys.argv[1]
     except IndexError:
-        infile = get_image_path_from_input()
+        indata = get_image_path_from_input()
     outfile = "output.txt"
-    run(infile, outfile, mapping)
+    run(indata, outfile, mapping, resize_width, blank_value)
