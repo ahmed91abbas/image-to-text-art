@@ -14,10 +14,12 @@ def pad_image(img, padding_value=255):
     nbr_row_paddings = 4 * math.ceil(len(img) / 4) - len(img)
 
     pad_rows = np.array([[padding_value] * len(img[0])] * nbr_row_paddings)
-    img = np.concatenate((img, pad_rows), axis=0)
+    if len(pad_rows):
+        img = np.concatenate((img, pad_rows), axis=0)
 
     pad_cols = np.full((len(img), nbr_col_paddings), padding_value)
-    img = np.append(img, pad_cols, axis=1)
+    if len(pad_cols):
+        img = np.append(img, pad_cols, axis=1)
 
     return img
 
